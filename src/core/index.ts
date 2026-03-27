@@ -47,21 +47,46 @@ export class ZkCaptcha {
 
   async generateProof(
     challenge: Challenge,
-    _options?: GenerateProofOptions
+    options?: GenerateProofOptions
   ): Promise<Proof> {
-    const secret = this.generateSecret();
-    
-    const proofData = await this.computeProof({
-      secret,
-      nonce: challenge.nonce,
-      difficulty: challenge.difficulty,
-    });
+    const secret = this.generateSecretArray();
+    const nonce = this.hexToArray(challenge.nonce);
+    const difficulty = challenge.difficulty;
+    const timestamp = Math.floor(Date.now() / 1000);
 
-    const publicInputs = [
-      challenge.nonce,
-      challenge.difficulty.toString(),
-      this.hashSecret(secret, challenge.nonce),
-    ];
+    options?.onProgress?.(10);
+
+    let proofData: string;
+    let publicInputs: string[];
+
+    if (proverService.isInitialized()) {
+      try {
+        options?.onProgress?.(30);
+        
+        const proofOutput = await proverService.generateProof({
+          secret,
+          nonce,
+          difficulty,
+          timestamp,
+        });
+
+        options?.onProgress?.(80);
+
+        proofData = this.arrayToBase64(proofOutput.proof);
+        publicInputs = proofOutput.publicInputs;
+      } catch (error) {
+        console.error('ZK proof generation failed, falling back to mock:', error);
+        const mockProof = await this.computeMockProof({ secret, nonce, difficulty });
+        proofData = mockProof.proofData;
+        publicInputs = mockProof.publicInputs;
+      }
+    } else {
+      const mockProof = await this.computeMockProof({ secret, nonce, difficulty });
+      proofData = mockProof.proofData;
+      publicInputs = mockProof.publicInputs;
+    }
+
+    options?.onProgress?.(100);
 
     return {
       proofData,
