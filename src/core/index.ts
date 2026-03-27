@@ -87,49 +87,67 @@ export class ZkCaptcha {
     return this.currentChallenge;
   }
 
-  private generateSecret(): string {
+  private generateSecretArray(): number[] {
     const array = new Uint8Array(32);
     crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    return Array.from(array);
   }
 
-  private hashSecret(secret: string, nonce: string): string {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(secret + nonce);
-    return this.sha256(data);
+  private hexToArray(hex: string): number[] {
+    const matches = hex.match(/.{1,2}/g) || [];
+    return matches.map(byte => parseInt(byte, 16));
   }
 
-  private sha256(data: Uint8Array): string {
-    let hash = 0;
-    for (let i = 0; i < data.length; i++) {
-      hash = ((hash << 5) - hash) + data[i];
-      hash = hash & hash;
+  private arrayToBase64(arr: Uint8Array): string {
+    let binary = '';
+    for (let i = 0; i < arr.length; i++) {
+      binary += String.fromCharCode(arr[i]);
     }
-    return Math.abs(hash).toString(16).padStart(16, '0');
+    return btoa(binary);
   }
 
-  private async computeProof(inputs: {
-    secret: string;
-    nonce: string;
+  private async computeMockProof(inputs: {
+    secret: number[];
+    nonce: number[];
     difficulty: number;
-  }): Promise<string> {
+  }): Promise<Proof> {
     const { secret, nonce, difficulty } = inputs;
-    let hash = '';
+    
+    let hash = 0;
     let counter = 0;
-
+    
     const target = '0'.repeat(Math.floor(difficulty / 2));
-
-    while (!hash.startsWith(target)) {
-      const combined = secret + nonce + counter.toString();
-      hash = this.sha256(new TextEncoder().encode(combined));
+    
+    do {
+      const combined = [...secret, ...nonce, counter % 256];
+      hash = this.simpleHash(combined);
       counter++;
-    }
+    } while (hash.toString(16).padStart(16, '0').substring(0, Math.floor(difficulty / 2)) !== target);
 
-    return this.encodeProof(secret, nonce, counter, hash);
+    const proofData = this.encodeProof(secret, nonce, counter, hash);
+    const publicInputs = [
+      nonce.map(n => n.toString(16).padStart(2, '0')).join(''),
+      difficulty.toString(),
+    ];
+
+    return { proofData, publicInputs };
   }
 
-  private encodeProof(secret: string, nonce: string, counter: number, hash: string): string {
-    const data = JSON.stringify({ secret, nonce, counter, hash });
+  private simpleHash(data: number[]): number {
+    let hash = 17;
+    for (let i = 0; i < data.length; i++) {
+      hash = (hash * 31 + data[i]) >>> 0;
+    }
+    return hash;
+  }
+
+  private encodeProof(secret: number[], nonce: number[], counter: number, hash: number): string {
+    const data = JSON.stringify({
+      secret: secret.map(s => s.toString(16).padStart(2, '0')).join(''),
+      nonce: nonce.map(n => n.toString(16).padStart(2, '0')).join(''),
+      counter,
+      hash: hash.toString(16),
+    });
     return btoa(data);
   }
 }
