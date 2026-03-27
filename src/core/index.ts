@@ -6,12 +6,14 @@ import type {
   ZkCaptchaConfig,
   GenerateProofOptions 
 } from '../types';
+import { proverService } from './prover';
 
 export class ZkCaptcha {
   private client: AxiosInstance;
   private siteId?: string;
   private currentChallenge: Challenge | null = null;
   private initialized: boolean = false;
+  private artifactsPath?: string;
 
   constructor(config: ZkCaptchaConfig) {
     this.client = axios.create({
@@ -22,10 +24,16 @@ export class ZkCaptcha {
       },
     });
     this.siteId = config.siteId;
+    this.artifactsPath = config.artifactsPath;
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
+    
+    if (this.artifactsPath) {
+      await proverService.initialize(this.artifactsPath);
+    }
+    
     this.initialized = true;
   }
 

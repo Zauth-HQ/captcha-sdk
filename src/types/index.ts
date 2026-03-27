@@ -21,6 +21,7 @@ export interface ZkCaptchaConfig {
   backendUrl: string;
   siteId?: string;
   timeout?: number;
+  artifactsPath?: string;
 }
 
 export interface GenerateProofOptions {
