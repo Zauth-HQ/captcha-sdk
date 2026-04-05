@@ -15,6 +15,13 @@ export interface VerificationResult {
   verificationId: string;
   token: string;
   expiresAt: string;
+  _meta?: {
+    verificationMethod: 'ultrahonk' | 'relayer';
+    txHash?: string;
+    blockHash?: string;
+    fallbackUsed?: boolean;
+    sessionId?: string;
+  };
 }
 
 export interface ZkCaptchaConfig {
