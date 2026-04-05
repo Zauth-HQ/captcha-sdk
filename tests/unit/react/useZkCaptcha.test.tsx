@@ -1,5 +1,5 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useZkCaptcha } from '../../src/react';
+import { useZkCaptcha } from '@/react';
 
 // Mock ZkCaptcha class
 const mockGetChallenge = jest.fn();
@@ -8,7 +8,7 @@ const mockVerify = jest.fn();
 const mockInitialize = jest.fn();
 const mockDestroy = jest.fn();
 
-jest.mock('../../src/core', () => ({
+jest.mock('@/core', () => ({
   ZkCaptcha: jest.fn().mockImplementation(() => ({
     initialize: mockInitialize,
     destroy: mockDestroy,
@@ -19,7 +19,7 @@ jest.mock('../../src/core', () => ({
 }));
 
 // Mock logger
-jest.mock('../../src/utils/logger', () => ({
+jest.mock('@/utils/logger', () => ({
   sdkLogger: {
     debug: jest.fn(),
     info: jest.fn(),

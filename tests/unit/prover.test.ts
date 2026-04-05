@@ -1,4 +1,4 @@
-import { ProverService, ProofInputs } from '../../../src/core';
+import { ProverService, ProofInputs } from '@/core';
 
 // Mock blakejs
 jest.mock('blakejs', () => ({
@@ -12,6 +12,7 @@ jest.mock('@noir-lang/noir_wasm', () => ({
 }));
 
 jest.mock('@noir-lang/aztec_backend', () => ({
+  __esModule: true,
   default: jest.fn().mockResolvedValue(undefined),
 }));
 

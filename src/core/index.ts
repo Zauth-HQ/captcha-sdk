@@ -11,7 +11,7 @@ import { circuitArtifact } from '../artifacts/circuit';
 import { sdkLogger, proofLogger } from '../utils/logger';
 
 // Re-export prover types and service for testing
-export { proverService, CircuitArtifact, ProofInputs, ProofOutput } from './prover';
+export { proverService, ProverService, CircuitArtifact, ProofInputs, ProofOutput } from './prover';
 
 export class ZkCaptcha {
   private client: AxiosInstance;

@@ -1,4 +1,4 @@
-import { ZkCaptcha } from '../../src/core/index';
+import { ZkCaptcha } from '@/core';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 
