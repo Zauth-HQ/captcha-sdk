@@ -6,14 +6,16 @@ import type {
   ZkCaptchaConfig,
   GenerateProofOptions 
 } from '../types';
-import { proverService } from './prover';
+import { proverService, CircuitArtifact } from './prover';
+import { circuitArtifact } from '../artifacts/circuit';
 
 export class ZkCaptcha {
   private client: AxiosInstance;
   private siteId?: string;
   private currentChallenge: Challenge | null = null;
   private initialized: boolean = false;
-  private artifactsPath?: string;
+  private artifactUrl?: string;
+  private artifactData?: CircuitArtifact;
 
   constructor(config: ZkCaptchaConfig) {
     this.client = axios.create({
@@ -24,17 +26,30 @@ export class ZkCaptcha {
       },
     });
     this.siteId = config.siteId;
-    this.artifactsPath = config.artifactsPath;
+    this.artifactUrl = config.artifactUrl;
+  }
+
+  setArtifactData(data: CircuitArtifact): void {
+    this.artifactData = data;
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
     
-    if (this.artifactsPath) {
-      await proverService.initialize(this.artifactsPath);
+    try {
+      if (this.artifactUrl) {
+        // Load from remote URL
+        await proverService.loadArtifact(this.artifactUrl);
+      } else {
+        // Use embedded artifact from circuits
+        await proverService.initialize(circuitArtifact);
+      }
+      
+      this.initialized = true;
+    } catch (error) {
+      console.warn('Failed to initialize prover with ZK, will use mock:', error);
+      this.initialized = true;
     }
-    
-    this.initialized = true;
   }
 
   async getChallenge(siteId?: string): Promise<Challenge> {
@@ -59,7 +74,7 @@ export class ZkCaptcha {
     let proofData: string;
     let publicInputs: string[];
 
-    if (proverService.isInitialized()) {
+    if (proverService.isInitialized() && proverService.hasCircuit()) {
       try {
         options?.onProgress?.(30);
         
@@ -72,7 +87,7 @@ export class ZkCaptcha {
 
         options?.onProgress?.(80);
 
-        proofData = this.arrayToBase64(proofOutput.proof);
+        proofData = proofOutput.proof;
         publicInputs = proofOutput.publicInputs;
       } catch (error) {
         console.error('ZK proof generation failed, falling back to mock:', error);
@@ -81,6 +96,7 @@ export class ZkCaptcha {
         publicInputs = mockProof.publicInputs;
       }
     } else {
+      console.warn('Circuit not loaded, using mock proof');
       const mockProof = await this.computeMockProof({ secret, nonce, difficulty });
       proofData = mockProof.proofData;
       publicInputs = mockProof.publicInputs;
@@ -104,6 +120,7 @@ export class ZkCaptcha {
   }
 
   async destroy(): Promise<void> {
+    await proverService.destroy();
     this.currentChallenge = null;
     this.initialized = false;
   }
@@ -121,14 +138,6 @@ export class ZkCaptcha {
   private hexToArray(hex: string): number[] {
     const matches = hex.match(/.{1,2}/g) || [];
     return matches.map(byte => parseInt(byte, 16));
-  }
-
-  private arrayToBase64(arr: Uint8Array): string {
-    let binary = '';
-    for (let i = 0; i < arr.length; i++) {
-      binary += String.fromCharCode(arr[i]);
-    }
-    return btoa(binary);
   }
 
   private async computeMockProof(inputs: {
