@@ -111,6 +111,7 @@ export function useZkCaptcha(options: UseZkCaptchaOptions): UseZkCaptchaReturn {
 
   return {
     generateProof,
+    fetchChallenge,
     status,
     token,
     error,

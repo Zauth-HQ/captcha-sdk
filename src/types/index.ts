@@ -48,6 +48,7 @@ export interface UseZkCaptchaOptions {
 
 export interface UseZkCaptchaReturn {
   generateProof: () => Promise<void>;
+  fetchChallenge: () => Promise<void>;
   status: CaptchaStatus;
   token: string | null;
   error: Error | null;
