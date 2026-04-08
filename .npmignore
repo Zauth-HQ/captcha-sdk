@@ -1,0 +1,49 @@
+# Source files
+src/
+tests/
+
+# Configuration files
+jest.config.js
+tsconfig.json
+tsup.config.ts
+.eslintrc
+.prettierrc
+
+# Development files
+*.log
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Build artifacts (will be included via 'files' in package.json, but exclude intermediate)
+coverage/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+.travis.yml
+.circleci/
+
+# Documentation (we include README.md and CHANGELOG.md via 'files')
+docs/
+
+# Examples
+examples/
