@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ZkCaptcha } from '../core';
+import { ZkCaptcha, DEFAULT_BACKEND_URL } from '../core';
 import type {
   Challenge,
   UseZkCaptchaOptions,
@@ -8,8 +8,8 @@ import type {
   VerificationResult,
 } from '../types';
 
-export function useZkCaptcha(options: UseZkCaptchaOptions): UseZkCaptchaReturn {
-  const { backendUrl, siteId, onSuccess, onError, autoChallenge = false } = options;
+export function useZkCaptcha(options: UseZkCaptchaOptions = {}): UseZkCaptchaReturn {
+  const { backendUrl = DEFAULT_BACKEND_URL, siteId, onSuccess, onError, autoChallenge = false } = options;
 
   const captchaRef = useRef<ZkCaptcha | null>(null);
   const [status, setStatus] = useState<CaptchaStatus>('idle');
@@ -120,5 +120,7 @@ export function useZkCaptcha(options: UseZkCaptchaOptions): UseZkCaptchaReturn {
     reset,
   };
 }
+
+export { DEFAULT_BACKEND_URL } from '../core';
 
 export default useZkCaptcha;

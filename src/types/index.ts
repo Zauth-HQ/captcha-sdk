@@ -25,7 +25,7 @@ export interface VerificationResult {
 }
 
 export interface ZkCaptchaConfig {
-  backendUrl: string;
+  backendUrl?: string;
   siteId?: string;
   timeout?: number;
   artifactUrl?: string;
@@ -39,7 +39,7 @@ export interface GenerateProofOptions {
 export type CaptchaStatus = 'idle' | 'loading' | 'processing' | 'success' | 'error';
 
 export interface UseZkCaptchaOptions {
-  backendUrl: string;
+  backendUrl?: string;
   siteId?: string;
   onSuccess?: (token: string) => void;
   onError?: (error: Error) => void;

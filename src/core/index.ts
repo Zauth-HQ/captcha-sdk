@@ -8,10 +8,12 @@ import type {
 } from '../types';
 import { proverService, CircuitArtifact } from './prover';
 import { circuitArtifact } from '../artifacts/circuit';
+import { DEFAULT_BACKEND_URL } from '../config';
 import { sdkLogger, proofLogger } from '../utils/logger';
 
 // Re-export prover types and service for testing
 export { proverService, ProverService, CircuitArtifact, ProofInputs, ProofOutput } from './prover';
+export { DEFAULT_BACKEND_URL } from '../config';
 
 export class ZkCaptcha {
   private client: AxiosInstance;
@@ -21,15 +23,17 @@ export class ZkCaptcha {
   private artifactUrl?: string;
   private artifactData?: CircuitArtifact;
 
-  constructor(config: ZkCaptchaConfig) {
+  constructor(config: ZkCaptchaConfig = {}) {
+    const backendUrl = config.backendUrl || DEFAULT_BACKEND_URL;
+
     sdkLogger.info('🚀 Creating ZkCaptcha instance', {
-      backendUrl: config.backendUrl,
+      backendUrl,
       siteId: config.siteId,
       hasArtifactUrl: !!config.artifactUrl,
     });
 
     this.client = axios.create({
-      baseURL: config.backendUrl,
+      baseURL: backendUrl,
       timeout: config.timeout || 30000,
       headers: {
         'Content-Type': 'application/json',
