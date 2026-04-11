@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-04-12
+
+### Changed
+- Updated the SDK documentation and release metadata for the production Render backend at `https://zauth-captcha.onrender.com`
+- Aligned the public quick-start examples with the deployed backend used by the production verification flow
+- Bumped the package version for the production backend release cut
+
 ## [1.0.0] - 2024-01-15
 
 ### Added
@@ -40,5 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No tracking or fingerprinting
 - Privacy-preserving verification
 
-[Unreleased]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.0...v1.0.2
 [1.0.0]: https://github.com/Zauth-HQ/captcha-sdk/releases/tag/v1.0.0

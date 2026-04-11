@@ -6,6 +6,9 @@
 
 > Zero-knowledge proof based CAPTCHA SDK for the modern web. Privacy-preserving, bot-resistant authentication without compromising user experience.
 
+Production backend:
+- `https://zauth-captcha.onrender.com`
+
 ## Features
 
 - **Zero-Knowledge Proofs**: Uses advanced ZK cryptography to verify humanity without exposing sensitive data
@@ -34,7 +37,7 @@ import { ZkCaptcha } from '@zauth/captcha-sdk';
 
 // Initialize the SDK
 const captcha = new ZkCaptcha({
-  backendUrl: 'https://your-backend.com',
+  backendUrl: 'https://zauth-captcha.onrender.com',
   siteId: 'your-site-id',
 });
 
@@ -69,7 +72,7 @@ function CaptchaComponent() {
     error, 
     progress 
   } = useZkCaptcha({
-    backendUrl: 'https://your-backend.com',
+    backendUrl: 'https://zauth-captcha.onrender.com',
     siteId: 'your-site-id',
     onSuccess: (token) => {
       console.log('Verification successful!', token);
@@ -197,7 +200,7 @@ The SDK requires a ZAuth-compatible backend. Your backend must implement:
 For React apps, set these environment variables:
 
 ```bash
-REACT_APP_ZAUTH_BACKEND_URL=https://your-backend.com
+REACT_APP_ZAUTH_BACKEND_URL=https://zauth-captcha.onrender.com
 REACT_APP_ZAUTH_SITE_ID=your-site-id
 ```
 
@@ -217,7 +220,7 @@ const proof = await captcha.generateProof(challenge, {
 
 ```typescript
 const captcha = new ZkCaptcha({
-  backendUrl: 'https://your-backend.com',
+  backendUrl: 'https://zauth-captcha.onrender.com',
   artifactUrl: 'https://your-cdn.com/circuit-artifact.json',
 });
 ```
