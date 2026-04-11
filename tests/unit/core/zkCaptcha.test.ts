@@ -1,4 +1,5 @@
 import { ZkCaptcha } from '../../../src/core';
+import { DEFAULT_BACKEND_URL } from '../../../src/config';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 
@@ -61,6 +62,22 @@ describe('ZkCaptcha Core', () => {
     it('should create instance without siteId', () => {
       const captcha = new ZkCaptcha({ backendUrl });
       expect(captcha).toBeDefined();
+    });
+
+    it('should create instance with default backend url when omitted', () => {
+      const captcha = new ZkCaptcha();
+      expect(captcha).toBeDefined();
+
+      mockAxios.onPost(`${DEFAULT_BACKEND_URL}/api/challenge`).reply(200, {
+        challengeId: 'default-challenge',
+        nonce: '0x' + '01'.repeat(32),
+        difficulty: 10,
+        expiresAt: new Date(Date.now() + 300000).toISOString(),
+      });
+
+      return expect(captcha.getChallenge()).resolves.toMatchObject({
+        challengeId: 'default-challenge',
+      });
     });
   });
 

@@ -4,6 +4,7 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { useZkCaptcha } from '@/react';
+import { DEFAULT_BACKEND_URL } from '@/config';
 
 // Mock ZkCaptcha class
 const mockGetChallenge = jest.fn();
@@ -11,15 +12,20 @@ const mockGenerateProof = jest.fn();
 const mockVerify = jest.fn();
 const mockInitialize = jest.fn();
 const mockDestroy = jest.fn();
+const mockZkCaptchaConstructor = jest.fn();
 
 jest.mock('@/core', () => ({
-  ZkCaptcha: jest.fn().mockImplementation(() => ({
+  ZkCaptcha: jest.fn().mockImplementation((config) => {
+    mockZkCaptchaConstructor(config);
+    return {
     initialize: mockInitialize,
     destroy: mockDestroy,
     getChallenge: mockGetChallenge,
     generateProof: mockGenerateProof,
     verify: mockVerify,
-  })),
+    };
+  }),
+  DEFAULT_BACKEND_URL: 'https://zauth-captcha.onrender.com',
 }));
 
 // Mock logger
@@ -34,7 +40,6 @@ jest.mock('@/utils/logger', () => ({
 
 describe('useZkCaptcha', () => {
   const defaultOptions = {
-    backendUrl: 'http://localhost:3000',
     siteId: 'test-site',
   };
 
@@ -56,6 +61,17 @@ describe('useZkCaptcha', () => {
     it('should call ZkCaptcha.initialize on mount', () => {
       renderHook(() => useZkCaptcha(defaultOptions));
       expect(mockInitialize).toHaveBeenCalled();
+    });
+
+    it('should default to the production backend url', () => {
+      renderHook(() => useZkCaptcha(defaultOptions));
+
+      expect(mockZkCaptchaConstructor).toHaveBeenCalledWith(
+        expect.objectContaining({
+          backendUrl: DEFAULT_BACKEND_URL,
+          siteId: 'test-site',
+        })
+      );
     });
   });
 
