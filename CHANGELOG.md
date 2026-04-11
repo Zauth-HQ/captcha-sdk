@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-04-12
+
+### Changed
+- Made the production Render backend the SDK default in code while keeping `backendUrl` overrideable
+- Exported a shared `DEFAULT_BACKEND_URL` constant for core and React consumers
+- Updated the SDK README to show the backend as the default instead of a required config value
+
 ## [1.0.2] - 2026-04-12
 
 ### Changed
@@ -47,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No tracking or fingerprinting
 - Privacy-preserving verification
 
-[Unreleased]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.0...v1.0.2
 [1.0.0]: https://github.com/Zauth-HQ/captcha-sdk/releases/tag/v1.0.0

@@ -6,9 +6,6 @@
 
 > Zero-knowledge proof based CAPTCHA SDK for the modern web. Privacy-preserving, bot-resistant authentication without compromising user experience.
 
-Production backend:
-- `https://zauth-captcha.onrender.com`
-
 ## Features
 
 - **Zero-Knowledge Proofs**: Uses advanced ZK cryptography to verify humanity without exposing sensitive data
@@ -37,7 +34,6 @@ import { ZkCaptcha } from '@zauth/captcha-sdk';
 
 // Initialize the SDK
 const captcha = new ZkCaptcha({
-  backendUrl: 'https://zauth-captcha.onrender.com',
   siteId: 'your-site-id',
 });
 
@@ -72,7 +68,6 @@ function CaptchaComponent() {
     error, 
     progress 
   } = useZkCaptcha({
-    backendUrl: 'https://zauth-captcha.onrender.com',
     siteId: 'your-site-id',
     onSuccess: (token) => {
       console.log('Verification successful!', token);
@@ -112,7 +107,7 @@ new ZkCaptcha(config: ZkCaptchaConfig)
 
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
-| `backendUrl` | `string` | ✅ | URL of your ZAuth backend server |
+| `backendUrl` | `string` | Optional | Backend server URL. Defaults to the production Render backend: `https://zauth-captcha.onrender.com` |
 | `siteId` | `string` | ❌ | Unique identifier for your site |
 | `timeout` | `number` | ❌ | Request timeout in milliseconds (default: 30000) |
 | `artifactUrl` | `string` | ❌ | URL to load ZK circuit artifacts from |
@@ -151,7 +146,7 @@ Cleans up resources. Call this when the SDK is no longer needed.
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `backendUrl` | `string` | Backend server URL |
+| `backendUrl` | `string` | Backend server URL. Defaults to the production Render backend |
 | `siteId` | `string` | Site identifier |
 | `onSuccess` | `(token: string) => void` | Callback on successful verification |
 | `onError` | `(error: Error) => void` | Callback on error |
@@ -220,7 +215,6 @@ const proof = await captcha.generateProof(challenge, {
 
 ```typescript
 const captcha = new ZkCaptcha({
-  backendUrl: 'https://zauth-captcha.onrender.com',
   artifactUrl: 'https://your-cdn.com/circuit-artifact.json',
 });
 ```
@@ -230,9 +224,21 @@ const captcha = new ZkCaptcha({
 ```typescript
 import { circuitArtifact } from './your-artifact';
 
-const captcha = new ZkCaptcha({ backendUrl: '...' });
+const captcha = new ZkCaptcha();
 captcha.setArtifactData(circuitArtifact);
 await captcha.initialize();
+```
+
+### Default Backend URL
+
+If you do not pass `backendUrl`, the SDK uses the production Render backend.
+
+```typescript
+import { DEFAULT_BACKEND_URL, ZkCaptcha } from '@zauth/captcha-sdk';
+
+console.log(DEFAULT_BACKEND_URL); // https://zauth-captcha.onrender.com
+
+const captcha = new ZkCaptcha();
 ```
 
 ## Browser Support
