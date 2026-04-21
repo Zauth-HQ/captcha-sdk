@@ -2,19 +2,19 @@
   "name": "@zauth/captcha-sdk",
   "version": "1.0.3",
   "description": "ZAuth Captcha SDK - Zero-knowledge proof based CAPTCHA for the modern web",
-  "main": "dist/core/index.js",
-  "module": "dist/core/index.mjs",
-  "types": "dist/core/index.d.ts",
+  "main": "dist/core.js",
+  "module": "dist/core.mjs",
+  "types": "dist/core.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/core/index.d.ts",
-      "import": "./dist/core/index.mjs",
-      "require": "./dist/core/index.js"
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.mjs",
+      "require": "./dist/core.js"
     },
     "./react": {
-      "types": "./dist/react/index.d.ts",
-      "import": "./dist/react/index.mjs",
-      "require": "./dist/react/index.js"
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.mjs",
+      "require": "./dist/react.js"
     }
   },
   "files": [
