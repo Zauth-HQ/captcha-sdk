@@ -6,13 +6,16 @@
 
 > Zero-knowledge proof based CAPTCHA SDK for the modern web. Privacy-preserving, bot-resistant authentication without compromising user experience.
 
-## Prover Toolchain
+## Runtime Defaults
 
-This SDK is intentionally tied to the backend's proven Noir toolchain so the browser prover and backend verifier stay in sync:
+This SDK keeps a browser-capable prover path by default and uses the backend URL only for challenge/verify transport. The backend URL is optional because the SDK already ships with a production default:
 
-- `@noir-lang/noir_wasm`: `1.0.0-beta.6`
-- `@noir-lang/aztec_backend`: `0.1.2`
-- `@noir-lang/barretenberg`: `github:noir-lang/barretenberg#39a1547875f941ef6640217a42d8f34972425c97`
+- `https://zauth-captcha.onrender.com`
+
+The current browser prover stack in this package is pinned as:
+
+- `@noir-lang/noir_js`: `1.0.0-beta.11`
+- `@aztec/bb.js`: `1.0.0`
 
 If you change any of these versions, revalidate the full proof flow against the backend before publishing.
 
@@ -117,7 +120,7 @@ new ZkCaptcha(config: ZkCaptchaConfig)
 
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
-| `backendUrl` | `string` | Optional | Backend server URL. Defaults to the production Render backend: `https://zauth-captcha.onrender.com` |
+| `backendUrl` | `string` | Optional | Backend server URL. Defaults to `https://zauth-captcha.onrender.com` |
 | `siteId` | `string` | ❌ | Unique identifier for your site |
 | `timeout` | `number` | ❌ | Request timeout in milliseconds (default: 30000) |
 | `artifactUrl` | `string` | ❌ | URL to load ZK circuit artifacts from |
@@ -202,11 +205,11 @@ The SDK requires a ZAuth-compatible backend. Your backend must implement:
 
 ### Environment Variables
 
-For React apps, set these environment variables:
+For React apps, set these environment variables only when you want to override the SDK default backend:
 
 ```bash
-REACT_APP_ZAUTH_BACKEND_URL=https://zauth-captcha.onrender.com
-REACT_APP_ZAUTH_SITE_ID=your-site-id
+NEXT_PUBLIC_ZAUTH_BACKEND_URL=http://127.0.0.1:3000
+NEXT_PUBLIC_ZAUTH_SITE_ID=your-site-id
 ```
 
 ## Advanced Usage

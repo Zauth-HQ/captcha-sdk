@@ -1,6 +1,7 @@
 // @ts-nocheck
 /* eslint-disable @typescript-eslint/no-invalid-tslint-comment */
 
+import { Buffer as BrowserBuffer } from 'buffer';
 import { sdkLogger, proofLogger, wasmLogger } from '../utils/logger';
 
 export interface ProofInputs {
@@ -239,14 +240,139 @@ export class ProverService {
     this.backend = new UltraHonkBackend(this.acir.bytecode, { threads: 1 });
   }
 
-  private async loadBbModule(): Promise<typeof import('@aztec/bb.js')> {
-    if (typeof window === 'undefined') {
-      const { createRequire } = await import('node:module');
-      const path = await import('node:path');
-      const sdkPackageJson = path.resolve(__dirname, '..', 'package.json');
-      const nodeRequire = createRequire(sdkPackageJson);
-      return nodeRequire('@aztec/bb.js') as typeof import('@aztec/bb.js');
+  private ensureBrowserBufferCompat(): void {
+    const globalWithBuffer = globalThis as typeof globalThis & {
+      Buffer?: {
+        prototype?: Record<string, unknown>;
+      };
+    };
+
+    if (!globalWithBuffer.Buffer) {
+      globalWithBuffer.Buffer = BrowserBuffer as unknown as typeof globalWithBuffer.Buffer;
+      sdkLogger.debug('Installed browser Buffer polyfill from buffer package');
     }
+
+    const proto = globalWithBuffer.Buffer?.prototype;
+    if (!proto) {
+      sdkLogger.debug('Browser Buffer shim not available after polyfill install');
+      return;
+    }
+
+    const defineAlias = (
+      alias: string,
+      target: string,
+      implementation?: (this: Uint8Array, ...args: any[]) => unknown,
+    ) => {
+      if (typeof proto[alias] === 'function') {
+        return false;
+      }
+
+      const targetFn = proto[target];
+      if (typeof targetFn === 'function') {
+        Object.defineProperty(proto, alias, {
+          configurable: true,
+          writable: true,
+          value: function (this: Uint8Array, ...args: any[]) {
+            return (targetFn as (...innerArgs: any[]) => unknown).apply(this, args);
+          },
+        });
+        return true;
+      }
+
+      if (implementation) {
+        Object.defineProperty(proto, alias, {
+          configurable: true,
+          writable: true,
+          value: implementation,
+        });
+        return true;
+      }
+
+      return false;
+    };
+
+    const readBigUint64BE = function (this: Uint8Array, offset = 0): bigint {
+      return new DataView(this.buffer, this.byteOffset, this.byteLength).getBigUint64(
+        offset,
+        false,
+      );
+    };
+
+    const readBigUint64LE = function (this: Uint8Array, offset = 0): bigint {
+      return new DataView(this.buffer, this.byteOffset, this.byteLength).getBigUint64(
+        offset,
+        true,
+      );
+    };
+
+    const writeBigUint64BE = function (
+      this: Uint8Array,
+      value: bigint,
+      offset = 0,
+    ): number {
+      new DataView(this.buffer, this.byteOffset, this.byteLength).setBigUint64(
+        offset,
+        BigInt(value),
+        false,
+      );
+      return offset + 8;
+    };
+
+    const writeBigUint64LE = function (
+      this: Uint8Array,
+      value: bigint,
+      offset = 0,
+    ): number {
+      new DataView(this.buffer, this.byteOffset, this.byteLength).setBigUint64(
+        offset,
+        BigInt(value),
+        true,
+      );
+      return offset + 8;
+    };
+
+    const patchedMethods = [
+      defineAlias('readBigUint64BE', 'readBigUInt64BE', readBigUint64BE),
+      defineAlias('readBigUInt64BE', 'readBigUint64BE', readBigUint64BE),
+      defineAlias('readBigUint64LE', 'readBigUInt64LE', readBigUint64LE),
+      defineAlias('readBigUInt64LE', 'readBigUint64LE', readBigUint64LE),
+      defineAlias('writeBigUint64BE', 'writeBigUInt64BE', writeBigUint64BE),
+      defineAlias('writeBigUInt64BE', 'writeBigUint64BE', writeBigUint64BE),
+      defineAlias('writeBigUint64LE', 'writeBigUInt64LE', writeBigUint64LE),
+      defineAlias('writeBigUInt64LE', 'writeBigUint64LE', writeBigUint64LE),
+    ].filter(Boolean).length;
+
+    sdkLogger.debug('Browser Buffer compatibility checked', {
+      hasReadBigUInt64BE: typeof proto.readBigUInt64BE === 'function',
+      hasReadBigUint64BE: typeof proto.readBigUint64BE === 'function',
+      hasWriteBigUInt64BE: typeof proto.writeBigUInt64BE === 'function',
+      hasWriteBigUint64BE: typeof proto.writeBigUint64BE === 'function',
+      patchedMethods,
+    });
+  }
+
+  private async loadBbModule(): Promise<typeof import('@aztec/bb.js')> {
+    const isNodeRuntime =
+      typeof process !== 'undefined' &&
+      !!process.versions &&
+      !!process.versions.node;
+
+    if (isNodeRuntime) {
+      const requireFn = (globalThis as Record<string, unknown>).require as
+        | undefined
+        | ((id: string) => unknown);
+
+      if (requireFn) {
+        try {
+          return requireFn('@aztec/bb.js') as typeof import('@aztec/bb.js');
+        } catch {
+          // Fall through to ESM import below if the CommonJS entry is unavailable.
+        }
+      }
+    }
+
+    this.ensureBrowserBufferCompat();
+    sdkLogger.debug('Loading @aztec/bb.js browser module');
 
     return import('@aztec/bb.js');
   }

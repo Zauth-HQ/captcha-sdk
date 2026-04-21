@@ -20,6 +20,8 @@ export interface VerificationResult {
     proofOrigin?: 'client' | 'backend';
     txHash?: string;
     blockHash?: string;
+    txUrl?: string;
+    explorerUrl?: string;
     fallbackUsed?: boolean;
     sessionId?: string;
   };

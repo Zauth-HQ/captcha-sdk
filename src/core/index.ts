@@ -245,6 +245,8 @@ export class ZkCaptcha {
         verificationId: response.data.verificationId,
         method: response.data._meta?.verificationMethod,
         fallbackUsed: response.data._meta?.fallbackUsed,
+        txHash: response.data._meta?.txHash,
+        txUrl: response.data._meta?.txUrl || response.data._meta?.explorerUrl,
       });
       
       return response.data;
