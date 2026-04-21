@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-04-21
+
+### Changed
+- Upgraded Noir toolchain to v1.0.0-beta.11 with bb.js for proof generation
+- Enhanced React hook with timeout and result state for better UX
+- Improved browser compatibility with buffer polyfill
+- Refactored prover service to use Noir.js and bb.js
+- Aligned hash computation with new circuit implementation
+
+### Removed
+- Mock proof fallback logic (production builds now require real ZK proof generation)
+
 ## [1.0.3] - 2026-04-12
 
 ### Changed
@@ -54,7 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No tracking or fingerprinting
 - Privacy-preserving verification
 
-[Unreleased]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.4...HEAD
+[1.0.4]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Zauth-HQ/captcha-sdk/compare/v1.0.0...v1.0.2
 [1.0.0]: https://github.com/Zauth-HQ/captcha-sdk/releases/tag/v1.0.0
