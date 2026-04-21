@@ -4,6 +4,7 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM"],
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]

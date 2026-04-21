@@ -10,7 +10,7 @@ jest.mock('../../../src/core/prover', () => ({
     isInitialized: jest.fn().mockReturnValue(true),
     hasCircuit: jest.fn().mockReturnValue(true),
     generateProof: jest.fn().mockResolvedValue({
-      proof: 'mock-proof-base64',
+      proof: '0x' + '11'.repeat(96),
       publicInputs: ['mock-hash-hex', '10'],
     }),
   },
@@ -123,14 +123,16 @@ describe('ZkCaptcha Core', () => {
         expiresAt: new Date(Date.now() + 300000).toISOString(),
       };
 
+      await zkCaptcha.initialize();
+
       const proof = await zkCaptcha.generateProof(mockChallenge);
 
       expect(proof).toBeDefined();
-      expect(proof.proofData).toBe('mock-proof-base64');
+      expect(proof.proofData).toBe(JSON.stringify({ ZK: '0x' + '11'.repeat(96) }));
       expect(proof.publicInputs).toHaveLength(2);
     });
 
-    it('should generate mock proof if prover fails', async () => {
+    it('should throw if prover fails', async () => {
       const mockChallenge = {
         challengeId: 'challenge-123',
         nonce: '0x' + '01'.repeat(32),
@@ -139,12 +141,11 @@ describe('ZkCaptcha Core', () => {
       };
 
       const { proverService } = require('../../../src/core/prover');
-      proverService.generateProof.mockRejectedValue(new Error('WASM failed'));
+      proverService.generateProof.mockRejectedValueOnce(new Error('WASM failed'));
 
-      const proof = await zkCaptcha.generateProof(mockChallenge);
+      await zkCaptcha.initialize();
 
-      expect(proof).toBeDefined();
-      expect(proof.proofData).toBeDefined();
+      await expect(zkCaptcha.generateProof(mockChallenge)).rejects.toThrow('WASM failed');
     });
   });
 
@@ -152,7 +153,7 @@ describe('ZkCaptcha Core', () => {
     it('should verify proof successfully', async () => {
       const challengeId = 'challenge-123';
       const proof = {
-        proofData: 'mock-proof-base64',
+        proofData: JSON.stringify({ ZK: '0x' + '11'.repeat(96) }),
         publicInputs: ['mock-hash-hex', '10'],
       };
 
@@ -172,7 +173,7 @@ describe('ZkCaptcha Core', () => {
     it('should handle verification failure', async () => {
       const challengeId = 'challenge-123';
       const proof = {
-        proofData: 'mock-proof-base64',
+        proofData: JSON.stringify({ ZK: '0x' + '11'.repeat(96) }),
         publicInputs: ['mock-hash-hex', '10'],
       };
 
@@ -203,6 +204,8 @@ describe('ZkCaptcha Core', () => {
           token: 'jwt-token-123',
           expiresAt: new Date(Date.now() + 3600000).toISOString(),
         });
+
+      await zkCaptcha.initialize();
 
       const challenge = await zkCaptcha.getChallenge();
       expect(challenge.challengeId).toBe(mockChallenge.challengeId);

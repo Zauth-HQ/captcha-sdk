@@ -11,7 +11,7 @@ export default defineConfig([
     splitting: false,
     sourcemap: true,
     clean: true,
-    external: ['react'],
-    noExternal: ['../artifacts/*'],
+    external: ['react', '@noir-lang/*', '@aztec/bb.js', 'axios', 'blakejs', 'pako'],
+    noExternal: [/\.\/artifacts\//],
   },
 ]);

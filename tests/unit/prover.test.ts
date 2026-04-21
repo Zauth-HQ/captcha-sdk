@@ -5,20 +5,25 @@ jest.mock('blakejs', () => ({
   blake2s: jest.fn().mockReturnValue(Buffer.from('mock-hash-32-bytes-long-data')),
 }));
 
-// Mock Noir WASM modules
-jest.mock('@noir-lang/noir_wasm', () => ({
-  initNoirWasm: jest.fn().mockResolvedValue(undefined),
-  acir_read_bytes: jest.fn().mockReturnValue({ mock: 'acir' }),
+jest.mock('@noir-lang/noir_js', () => ({
+  Noir: jest.fn().mockImplementation(() => ({
+    init: jest.fn().mockResolvedValue(undefined),
+    execute: jest.fn().mockResolvedValue({
+      witness: new Uint8Array([1, 2, 3]),
+      returnValue: null,
+    }),
+  })),
 }));
 
-jest.mock('@noir-lang/aztec_backend', () => ({
-  __esModule: true,
-  default: jest.fn().mockResolvedValue(undefined),
-}));
-
-jest.mock('@noir-lang/barretenberg', () => ({
-  setup_generic_prover_and_verifier: jest.fn().mockResolvedValue([{ mock: 'prover' }]),
-  create_proof: jest.fn().mockResolvedValue(Buffer.from('mock-proof-data')),
+jest.mock('@aztec/bb.js', () => ({
+  UltraHonkBackend: jest.fn().mockImplementation(() => ({
+    generateProof: jest.fn().mockResolvedValue({
+      proof: new Uint8Array(96).fill(1),
+      publicInputs: ['0x02', '0x03'],
+    }),
+    verifyProof: jest.fn().mockResolvedValue(true),
+    destroy: jest.fn().mockResolvedValue(undefined),
+  })),
 }));
 
 describe('ProverService', () => {

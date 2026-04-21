@@ -2,6 +2,20 @@ import { ZkCaptcha } from '@/core';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 
+jest.mock('@/core/prover', () => ({
+  proverService: {
+    initialize: jest.fn().mockResolvedValue(undefined),
+    isInitialized: jest.fn().mockReturnValue(true),
+    hasCircuit: jest.fn().mockReturnValue(true),
+    generateProof: jest.fn().mockResolvedValue({
+      proof: '0x' + '22'.repeat(96),
+      publicInputs: ['0x' + '10'.repeat(32), '0x' + '20'.repeat(32)],
+    }),
+    destroy: jest.fn().mockResolvedValue(undefined),
+  },
+  CircuitArtifact: jest.fn(),
+}));
+
 describe('SDK Integration', () => {
   let mockAxios: MockAdapter;
   const backendUrl = 'http://localhost:3000';
@@ -44,6 +58,8 @@ describe('SDK Integration', () => {
         siteId: 'integration-test',
       });
 
+      await zkCaptcha.initialize();
+
       // Step 1: Get challenge
       const fetchedChallenge = await zkCaptcha.getChallenge();
       expect(fetchedChallenge.challengeId).toBe(challenge.challengeId);
@@ -51,7 +67,7 @@ describe('SDK Integration', () => {
       // Step 2: Generate proof
       const proof = await zkCaptcha.generateProof(fetchedChallenge);
       expect(proof).toBeDefined();
-      expect(proof.proofData).toBeDefined();
+      expect(proof.proofData).toBe(JSON.stringify({ ZK: '0x' + '22'.repeat(96) }));
       expect(proof.publicInputs).toBeDefined();
 
       // Step 3: Verify proof
@@ -88,6 +104,8 @@ describe('SDK Integration', () => {
         });
 
       const zkCaptcha = new ZkCaptcha({ backendUrl });
+
+      await zkCaptcha.initialize();
 
       const fetchedChallenge = await zkCaptcha.getChallenge();
       const proof = await zkCaptcha.generateProof(fetchedChallenge);

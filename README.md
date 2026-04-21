@@ -6,6 +6,16 @@
 
 > Zero-knowledge proof based CAPTCHA SDK for the modern web. Privacy-preserving, bot-resistant authentication without compromising user experience.
 
+## Prover Toolchain
+
+This SDK is intentionally tied to the backend's proven Noir toolchain so the browser prover and backend verifier stay in sync:
+
+- `@noir-lang/noir_wasm`: `1.0.0-beta.6`
+- `@noir-lang/aztec_backend`: `0.1.2`
+- `@noir-lang/barretenberg`: `github:noir-lang/barretenberg#39a1547875f941ef6640217a42d8f34972425c97`
+
+If you change any of these versions, revalidate the full proof flow against the backend before publishing.
+
 ## Features
 
 - **Zero-Knowledge Proofs**: Uses advanced ZK cryptography to verify humanity without exposing sensitive data
