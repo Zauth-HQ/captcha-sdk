@@ -157,52 +157,56 @@ export class ProverService {
     }
 
     try {
-      wasmLogger.info('Loading Barretenberg backend...');
-      const barretenberg = await import('@noir-lang/barretenberg');
+      if (!this.noir || !this.backend) {
+        throw new Error('Prover backends not initialized.');
+      }
 
       // Compute expected hash
       proofLogger.info('Computing witness hash...');
       const expectedHash = this.computeExpectedHash(inputs.secret, inputs.nonce, inputs.difficulty);
       proofLogger.debug('Expected hash computed:', expectedHash.slice(0, 8).map(n => n.toString(16)));
 
-      wasmLogger.info('Setting up prover...');
-      const [prover] = await barretenberg.setup_generic_prover_and_verifier(this.acir);
-      wasmLogger.info('✅ Prover ready');
-
-      const witness: Record<string, any> = {
+      wasmLogger.info('Computing witness with Noir JS...');
+      const witnessResult = await this.noir.execute({
         secret: inputs.secret,
         nonce: inputs.nonce,
+        expected_hash: expectedHash,
         difficulty: inputs.difficulty,
         timestamp: inputs.timestamp,
-        hash_output: expectedHash
-      };
+      });
+      wasmLogger.info('✅ Witness ready');
 
       proofLogger.info('Generating proof...');
       wasmLogger.progress(0, 'Starting witness computation');
       
-      const proofBuffer: Uint8Array = await barretenberg.create_proof(prover, this.acir, witness);
+      const proofResult = await this.backend.generateProof(witnessResult.witness, {
+        keccakZK: true,
+      });
+
+      const verified = await this.backend.verifyProof(proofResult, {
+        keccakZK: true,
+      });
+
+      if (!verified) {
+        throw new Error('Generated proof failed local verification.');
+      }
       
       wasmLogger.progress(100, 'Proof complete');
       proofLogger.info('✅ Proof generated successfully');
 
-      const proofBase64 = this.uint8ArrayToBase64(proofBuffer);
-      proofLogger.debug('Proof encoded to base64:', { length: proofBase64.length });
-
-      const publicInputs = [
-        expectedHash.map(n => n.toString(16).padStart(2, '0')).join(''),
-        inputs.difficulty.toString(),
-      ];
+      const proofHex = this.uint8ArrayToHex(proofResult.proof);
+      proofLogger.debug('Proof encoded to hex:', { length: proofHex.length });
 
       const duration = Date.now() - startTime;
       proofLogger.info('🎯 END: Proof generation complete', {
-        proofSize: proofBase64.length,
-        publicInputsCount: publicInputs.length,
+        proofSize: proofHex.length,
+        publicInputsCount: proofResult.publicInputs.length,
         duration: `${duration}ms`,
       });
 
       return {
-        proof: proofBase64,
-        publicInputs,
+        proof: proofHex,
+        publicInputs: proofResult.publicInputs,
       };
     } catch (error) {
       proofLogger.error('❌ Failed to generate proof:', (error as Error).message);
