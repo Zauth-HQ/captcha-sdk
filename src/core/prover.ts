@@ -30,6 +30,8 @@ export class ProverService {
   private static instance: ProverService;
   private initialized: boolean = false;
   private acir: any = null;
+  private noir: any = null;
+  private backend: any = null;
 
   private constructor() {
     sdkLogger.debug('ProverService instance created');
@@ -53,19 +55,18 @@ export class ProverService {
     sdkLogger.info('🚀 Initializing ZK prover...');
 
     try {
-      sdkLogger.debug('Loading @noir-lang/noir_wasm...');
-      const noirWasm = await import('@noir-lang/noir_wasm');
-      sdkLogger.debug('Loading @noir-lang/aztec_backend...');
-      const aztecBackend = await import('@noir-lang/aztec_backend');
+      sdkLogger.debug('Loading Noir witness executor and bb.js prover...');
+      const noirJs = await import('@noir-lang/noir_js');
+      const { Noir } = noirJs as typeof import('@noir-lang/noir_js');
+      await this.loadBbModule();
 
-      sdkLogger.debug('Initializing Noir WASM...');
-      await noirWasm.initNoirWasm();
-      sdkLogger.debug('Initializing Aztec backend...');
-      await (aztecBackend as any).default();
+      sdkLogger.info('✅ Witness backend and bb.js prover loaded');
 
       if (artifactJson) {
         sdkLogger.debug('Loading circuit from artifact...');
         this.acir = await this.loadCircuitFromJson(artifactJson);
+        await this.initializeNoirExecutor();
+        await this.initializeProofBackend();
         sdkLogger.info(`✅ Circuit loaded: ${artifactJson.bytecode.length} bytes`);
       }
 
@@ -80,14 +81,8 @@ export class ProverService {
 
   private async loadCircuitFromJson(artifact: CircuitArtifact): Promise<any> {
     try {
-      sdkLogger.debug('Parsing circuit bytecode...');
-      const noirWasm = await import('@noir-lang/noir_wasm');
-      const bytecode = Buffer.from(artifact.bytecode, 'base64');
-      const acirBytes = new Uint8Array(bytecode);
-      
-      sdkLogger.debug(`Decoded ${acirBytes.length} bytes from base64`);
-      
-      return noirWasm.acir_read_bytes(acirBytes);
+      sdkLogger.debug('Using embedded ACIR artifact as-is');
+      return artifact;
     } catch (error) {
       sdkLogger.error('❌ Failed to load circuit:', (error as Error).message);
       throw error;
@@ -105,6 +100,8 @@ export class ProverService {
       sdkLogger.debug(`Fetched ${artifact.bytecode.length} bytes`);
       
       this.acir = await this.loadCircuitFromJson(artifact);
+      await this.initializeNoirExecutor();
+      await this.initializeProofBackend();
       
       const duration = Date.now() - startTime;
       sdkLogger.info(`✅ Artifact loaded successfully (${duration}ms)`);
@@ -219,12 +216,41 @@ export class ProverService {
     }
   }
 
-  private uint8ArrayToBase64(bytes: Uint8Array): string {
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
+  private uint8ArrayToHex(bytes: Uint8Array): string {
+    return `0x${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+  }
+
+  private async initializeNoirExecutor(): Promise<void> {
+    if (!this.acir) {
+      throw new Error('Circuit not loaded.');
     }
-    return btoa(binary);
+
+    const noirJs = await import('@noir-lang/noir_js');
+    const { Noir } = noirJs as typeof import('@noir-lang/noir_js');
+    this.noir = new Noir(this.acir);
+    await this.noir.init();
+  }
+
+  private async initializeProofBackend(): Promise<void> {
+    if (!this.acir) {
+      throw new Error('Circuit not loaded.');
+    }
+
+    const bbModule = await this.loadBbModule();
+    const { UltraHonkBackend } = bbModule as typeof import('@aztec/bb.js');
+    this.backend = new UltraHonkBackend(this.acir.bytecode, { threads: 1 });
+  }
+
+  private async loadBbModule(): Promise<typeof import('@aztec/bb.js')> {
+    if (typeof window === 'undefined') {
+      const { createRequire } = await import('node:module');
+      const path = await import('node:path');
+      const sdkPackageJson = path.resolve(__dirname, '..', 'package.json');
+      const nodeRequire = createRequire(sdkPackageJson);
+      return nodeRequire('@aztec/bb.js') as typeof import('@aztec/bb.js');
+    }
+
+    return import('@aztec/bb.js');
   }
 
   isInitialized(): boolean {
@@ -239,6 +265,11 @@ export class ProverService {
     sdkLogger.info('🧹 Destroying prover service');
     this.initialized = false;
     this.acir = null;
+    if (this.backend) {
+      await this.backend.destroy();
+      this.backend = null;
+    }
+    this.noir = null;
     sdkLogger.info('✅ Prover destroyed');
   }
 }
