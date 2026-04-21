@@ -122,9 +122,9 @@ export class ZkCaptcha {
       this.initialized = true;
       sdkLogger.info('✅ ZkCaptcha initialized successfully');
     } catch (error) {
-      sdkLogger.error('⚠️ Failed to initialize prover with ZK:', (error as Error).message);
-      sdkLogger.warn('⚠️ Will use mock proof fallback (NOT SECURE!)');
-      this.initialized = true;
+      sdkLogger.error('❌ Failed to initialize prover with ZK:', (error as Error).message);
+      this.initialized = false;
+      throw error;
     }
   }
 
@@ -199,30 +199,18 @@ export class ZkCaptcha {
         options?.onProgress?.(80);
         sdkLogger.progress(80, 'Encoding proof');
 
-        proofData = proofOutput.proof;
+        proofData = JSON.stringify({ ZK: proofOutput.proof });
         publicInputs = proofOutput.publicInputs;
         
         sdkLogger.info('✅ Real ZK proof generated');
       } catch (error) {
-        const errorMsg = (error as Error).message;
-        sdkLogger.error('❌ ZK proof generation failed:', errorMsg);
-        
-        // FALLBACK - This is critical for testing!
-        sdkLogger.fallback('ZK Proof', 'Mock Proof', errorMsg);
-        sdkLogger.warn('⚠️  FALLBACK: Using MOCK proof (NOT SECURE!)');
-        sdkLogger.warn('⚠️  This proof will NOT verify on-chain!');
-        
-        const mockProof = await this.computeMockProof({ secret, nonce, difficulty });
-        proofData = mockProof.proofData;
-        publicInputs = mockProof.publicInputs;
+        proofLogger.error('❌ ZK proof generation failed:', (error as Error).message);
+        throw error;
       }
     } else {
-      sdkLogger.warn('⚠️  Circuit not loaded, using mock proof');
-      sdkLogger.warn('⚠️  This is NOT a real ZK proof!');
-      
-      const mockProof = await this.computeMockProof({ secret, nonce, difficulty });
-      proofData = mockProof.proofData;
-      publicInputs = mockProof.publicInputs;
+      const error = new Error('Prover is not initialized or circuit is not loaded.');
+      proofLogger.error(error.message);
+      throw error;
     }
 
     options?.onProgress?.(100);
@@ -289,54 +277,9 @@ export class ZkCaptcha {
     return matches.map(byte => parseInt(byte, 16));
   }
 
-  private async computeMockProof(inputs: {
-    secret: number[];
-    nonce: number[];
-    difficulty: number;
-  }): Promise<Proof> {
-    sdkLogger.warn('⚠️  Computing MOCK proof (INSECURE!)');
-    
-    const { secret, nonce, difficulty } = inputs;
-    
-    let hash = 0;
-    let counter = 0;
-    
-    const target = '0'.repeat(Math.floor(difficulty / 2));
-    
-    do {
-      const combined = [...secret, ...nonce, counter % 256];
-      hash = this.simpleHash(combined);
-      counter++;
-    } while (hash.toString(16).padStart(16, '0').substring(0, Math.floor(difficulty / 2)) !== target);
-
-    const proofData = this.encodeProof(secret, nonce, counter, hash);
-    const publicInputs = [
-      nonce.map(n => n.toString(16).padStart(2, '0')).join(''),
-      difficulty.toString(),
-    ];
-
-    sdkLogger.warn('⚠️  MOCK proof generated - NOT VERIFIABLE!');
-
-    return { proofData, publicInputs };
-  }
-
-  private simpleHash(data: number[]): number {
-    let hash = 17;
-    for (let i = 0; i < data.length; i++) {
-      hash = (hash * 31 + data[i]) >>> 0;
-    }
-    return hash;
-  }
-
-  private encodeProof(secret: number[], nonce: number[], counter: number, hash: number): string {
-    const data = JSON.stringify({
-      mock: true,
-      secret: secret.map(s => s.toString(16).padStart(2, '0')).join(''),
-      nonce: nonce.map(n => n.toString(16).padStart(2, '0')).join(''),
-      counter,
-      hash: hash.toString(16),
-    });
-    return btoa(data);
+  private encodeFieldHex(value: number | bigint): string {
+    const hex = BigInt(value).toString(16).padStart(64, '0');
+    return `0x${hex}`;
   }
 }
 
