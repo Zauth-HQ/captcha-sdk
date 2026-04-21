@@ -17,6 +17,7 @@ export interface VerificationResult {
   expiresAt: string;
   _meta?: {
     verificationMethod: 'ultrahonk' | 'relayer';
+    proofOrigin?: 'client' | 'backend';
     txHash?: string;
     blockHash?: string;
     fallbackUsed?: boolean;
@@ -41,6 +42,7 @@ export type CaptchaStatus = 'idle' | 'loading' | 'processing' | 'success' | 'err
 export interface UseZkCaptchaOptions {
   backendUrl?: string;
   siteId?: string;
+  timeout?: number;
   onSuccess?: (token: string) => void;
   onError?: (error: Error) => void;
   autoChallenge?: boolean;
@@ -51,6 +53,7 @@ export interface UseZkCaptchaReturn {
   fetchChallenge: () => Promise<void>;
   status: CaptchaStatus;
   token: string | null;
+  result: VerificationResult | null;
   error: Error | null;
   challenge: Challenge | null;
   progress: number;

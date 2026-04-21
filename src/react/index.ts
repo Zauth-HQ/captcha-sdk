@@ -9,23 +9,33 @@ import type {
 } from '../types';
 
 export function useZkCaptcha(options: UseZkCaptchaOptions = {}): UseZkCaptchaReturn {
-  const { backendUrl = DEFAULT_BACKEND_URL, siteId, onSuccess, onError, autoChallenge = false } = options;
+  const {
+    backendUrl = DEFAULT_BACKEND_URL,
+    siteId,
+    timeout,
+    onSuccess,
+    onError,
+    autoChallenge = false,
+  } = options;
 
   const captchaRef = useRef<ZkCaptcha | null>(null);
+  const initPromiseRef = useRef<Promise<void> | null>(null);
   const [status, setStatus] = useState<CaptchaStatus>('idle');
   const [token, setToken] = useState<string | null>(null);
+  const [result, setResult] = useState<VerificationResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [progress, setProgress] = useState<number>(0);
 
   useEffect(() => {
-    captchaRef.current = new ZkCaptcha({ backendUrl, siteId });
-    captchaRef.current.initialize();
+    captchaRef.current = new ZkCaptcha({ backendUrl, siteId, timeout });
+    initPromiseRef.current = captchaRef.current.initialize();
 
     return () => {
+      initPromiseRef.current = null;
       captchaRef.current?.destroy();
     };
-  }, [backendUrl, siteId]);
+  }, [backendUrl, siteId, timeout]);
 
   useEffect(() => {
     if (autoChallenge && captchaRef.current && status === 'idle') {
@@ -51,7 +61,8 @@ export function useZkCaptcha(options: UseZkCaptchaOptions = {}): UseZkCaptchaRet
   }, [onError]);
 
   const generateProof = useCallback(async () => {
-    if (!captchaRef.current) {
+    const captcha = captchaRef.current;
+    if (!captcha) {
       const err = new Error('SDK not initialized');
       setError(err);
       setStatus('error');
@@ -64,30 +75,35 @@ export function useZkCaptcha(options: UseZkCaptchaOptions = {}): UseZkCaptchaRet
       setError(null);
       setProgress(0);
 
-      const currentChallenge = captchaRef.current.getCurrentChallenge();
+      if (initPromiseRef.current) {
+        await initPromiseRef.current;
+      }
+
+      const currentChallenge = captcha.getCurrentChallenge();
       if (!currentChallenge) {
         await fetchChallenge();
       }
 
-      const finalChallenge = captchaRef.current.getCurrentChallenge();
+      const finalChallenge = captcha.getCurrentChallenge();
       if (!finalChallenge) {
         throw new Error('No challenge available');
       }
 
       setProgress(30);
 
-      const proof = await captchaRef.current.generateProof(finalChallenge, {
+      const proof = await captcha.generateProof(finalChallenge, {
         onProgress: (p) => setProgress(30 + Math.floor(p * 0.5)),
       });
 
       setProgress(80);
 
-      const result: VerificationResult = await captchaRef.current.verify(
+      const result: VerificationResult = await captcha.verify(
         finalChallenge.challengeId,
         proof
       );
 
       setProgress(100);
+      setResult(result);
       setToken(result.token);
       setStatus('success');
       setChallenge(null);
@@ -104,6 +120,7 @@ export function useZkCaptcha(options: UseZkCaptchaOptions = {}): UseZkCaptchaRet
   const reset = useCallback(() => {
     setStatus('idle');
     setToken(null);
+    setResult(null);
     setError(null);
     setChallenge(null);
     setProgress(0);
@@ -114,6 +131,7 @@ export function useZkCaptcha(options: UseZkCaptchaOptions = {}): UseZkCaptchaRet
     fetchChallenge,
     status,
     token,
+    result,
     error,
     challenge,
     progress,
