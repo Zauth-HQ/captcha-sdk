@@ -113,30 +113,24 @@ export class ProverService {
 
   private computeExpectedHash(secret: number[], nonce: number[], difficulty: number): number[] {
     sdkLogger.debug('Computing expected hash...');
-    
-    const { blake2s } = require('blakejs');
-    
-    const input: Uint8Array = new Uint8Array(68);
+
+    // Keep this exactly aligned with circuits/src/hash.nr.
+    const hashBytes = new Array<number>(32);
+    const d = difficulty & 0xff;
+
     for (let i = 0; i < 32; i++) {
-      input[i] = secret[i];
+      const rot = (difficulty >> (i % 4)) & 0xff;
+      hashBytes[i] = (secret[i] ^ nonce[i] ^ d ^ rot ^ i) & 0xff;
     }
-    for (let i = 0; i < 32; i++) {
-      input[32 + i] = nonce[i];
-    }
-    input[64] = ((difficulty >> 24) & 0xff);
-    input[65] = ((difficulty >> 16) & 0xff);
-    input[66] = ((difficulty >> 8) & 0xff);
-    input[67] = (difficulty & 0xff);
-    
+
     sdkLogger.verbose('Hash input prepared:', {
       secretLength: 32,
       nonceLength: 32,
       difficultyBytes: 4,
-      totalInput: 68,
+      totalInput: 64,
     });
-    
-    const hashBytes = blake2s(input);
-    return Array.from(hashBytes);
+
+    return hashBytes;
   }
 
   async generateProof(inputs: ProofInputs): Promise<ProofOutput> {
